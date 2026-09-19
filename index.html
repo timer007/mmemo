@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイマー付き汎用メモ (31行)</title>
+  <style>
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #333333;
+      --card-bg: #ffffff;
+      --border-color: #cccccc;
+      --input-bg: #ffffff;
+    }
+
+    body.dark-mode {
+      --bg-color: #1e1e1e;
+      --text-color: #e0e0e0;
+      --card-bg: #2d2d2d;
+      --border-color: #444444;
+      --input-bg: #3b3b3b;
+    }
+
+    body { 
+      font-family: sans-serif; 
+      padding: 10px; 
+      background-color: var(--bg-color); 
+      color: var(--text-color);
+      margin: 0;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    
+    /* 1行タイマー枠 */
+    .timer-container {
+      display: flex;
+      flex-wrap: wrap; 
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--card-bg);
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .timer-display { 
+      font-size: 1.3rem; 
+      font-weight: bold; 
+      min-width: 95px; 
+      text-align: center; 
+      padding: 2px 4px;
+    }
+    .timer-inputs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .num-input { 
+      width: 48px; 
+      height: 32px;
+      padding: 2px 4px; 
+      font-size: 16px; 
+      text-align: center; 
+      background: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color); 
+      border-radius: 4px; 
+      box-sizing: border-box;
+    }
+    .timer-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .t-btn { 
+      height: 32px;
+      padding: 0 8px; 
+      font-weight: bold; 
+      font-size: 13px;
+      cursor: pointer; 
+      border: none; 
+      border-radius: 4px; 
+      box-sizing: border-box;
+    }
+    .btn-start { background: #28a745; color: white; }
+    .btn-stop { background: #dc3545; color: white; }
+    .btn-reset { background: #6c757d; color: white; }
+    .btn-preset { background: #17a2b8; color: white; }
+    
+    /* 音ON/OFFボタン（文字固定サイズ） */
+    .btn-sound { 
+      background: #ffc107; 
+      color: #333; 
+      width: 76px !important; 
+      min-width: 76px !important;
+      text-align: center;
+      padding: 0 !important;
+    }
+
+    /* 上部一括操作エリア */
+    .global-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .save-btn { 
+      flex-grow: 2; 
+      height: 40px;
+      font-size: 16px;
+      font-weight: bold; 
+      cursor: pointer; 
+      background: #007bff; 
+      color: white; 
+      border: none; 
+      border-radius: 4px; 
+    }
+    .clip-btn {
+      flex-grow: 1;
+      height: 40px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    /* メモエリア */
+    .memo-row { 
+      display: flex; 
+      align-items: center;
+      gap: 8px; 
+      margin-bottom: 8px; 
+    }
+    .id-input { 
+      width: 125px; 
+      height: 34px;
+      padding: 4px 6px; 
+      background: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color); 
+      border-radius: 4px; 
+      text-align: center; 
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .text-input { 
+      flex-grow: 1; 
+      height: 34px;
+      padding: 4px 8px; 
+      background: var(--input-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color); 
+      border-radius: 4px; 
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    /* 最下段コントロール・ポリシー */
+    .bottom-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+    }
+    .sub-btn {
+      flex: 1 1 calc(50% - 8px);
+      height: 36px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+    .danger-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+    }
+
+    footer {
+      margin-top: 24px;
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #777777;
+      border-top: 1px solid var(--border-color);
+      background: var(--card-bg);
+      border-radius: 4px;
+    }
+    footer h4 {
+      margin: 0 0 6px 0;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- タイマーエリア -->
+  <div class="timer-container">
+    <div id="display" class="timer-display">00:00:00</div>
+    <div class="timer-inputs">
+      <input type="number" id="hInput" class="num-input" placeholder="時" min="0" max="99">時
+      <input type="number" id="mInput" class="num-input" placeholder="分" min="0" max="59">分
+      <input type="number" id="sInput" class="num-input" placeholder="秒" min="0" max="59">秒
+    </div>
+    <div class="timer-buttons">
+      <button class="t-btn btn-start" onclick="startTimer()">スタート</button>
+      <button class="t-btn btn-stop" onclick="stopTimer()">ストップ</button>
+      <button class="t-btn btn-reset" onclick="resetTimer()">リセット</button>
+      
+      <!-- プリセットボタン -->
+      <button class="t-btn btn-preset" onclick="setPreset(3)">3分</button>
+      <button class="t-btn btn-preset" onclick="setPreset(5)">5分</button>
+      <button class="t-btn btn-preset" onclick="setPreset(10)">10分</button>
+      
+      <!-- 音ON/OFF -->
+      <button id="soundBtn" class="t-btn btn-sound" onclick="toggleSound()">音 OFF</button>
+    </div>
+  </div>
+
+  <!-- 上部共通コントロールボタン -->
+  <div class="global-controls">
+    <button class="save-btn" onclick="saveAllMemos()">すべて保存</button>
+    <button class="clip-btn" onclick="copyActiveCell()">コピー</button>
+    <button class="clip-btn" onclick="pasteActiveCell()">ペースト</button>
+  </div>
+
+  <!-- 31個のメモ枠 -->
+  <div id="memoContainer"></div>
+
+  <!-- 最下段コントロールボタン -->
+  <div class="bottom-controls">
+    <button class="sub-btn" onclick="toggleDarkMode()">ダークモード</button>
+    <button class="sub-btn danger-btn" onclick="clearAllMemos()">一括リセット</button>
+    <button class="sub-btn" onclick="exportCSV()">CSV書き出し</button>
+    <button class="sub-btn" onclick="document.getElementById('csvInput').click()">CSV読み込み</button>
+    <input type="file" id="csvInput" accept=".csv" style="display: none;" onchange="importCSV(event)">
+  </div>
+
+  <!-- Google AdSense対応 プライバシーポリシー -->
+  <footer>
+    <h4>プライバシーポリシー</h4>
+    <p>当サイトでは、利用状況の分析および広告配信（Google AdSense等）のためにCookie（クッキー）を使用する場合があります。Cookieは、お客様がサイトを訪れた際の情報（個人を特定する情報は含まれません）を記録します。ブラウザの設定によりCookieの受け取りを拒否することも可能です。</p>
+  </footer>
+
+  <script>
+    /* アクティブな入力枠を追跡する処理 */
+    let lastActiveInput = null;
+
+    document.addEventListener('focusin', (e) => {
+      if (e.target.tagName === 'INPUT' && (e.target.classList.contains('id-input') || e.target.classList.contains('text-input'))) {
+        lastActiveInput = e.target;
+      }
+    });
+
+    /* アクティブセルのコピー機能 */
+    function copyActiveCell() {
+      if (!lastActiveInput) {
+        alert('コピーしたい入力欄（ID欄またはメモ欄）をクリックして選択してください。');
+        return;
+      }
+      const textToCopy = lastActiveInput.value;
+      if (!textToCopy) {
+        alert('選択されている欄は空です。');
+        return;
+      }
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('コピーしました！');
+      }).catch(() => {
+        alert('コピーに失敗しました。');
+      });
+    }
+
+    /* アクティブセルのペースト機能（スマホ対応・エラー制御付き） */
+    async function pasteActiveCell() {
+      if (!lastActiveInput) {
+        alert('貼り付けたい入力欄（ID欄またはメモ欄）をクリックして選択してください。');
+        return;
+      }
+
+      try {
+        const text = await navigator.clipboard.readText();
+        lastActiveInput.value = text;
+      } catch (err) {
+        alert('セキュリティ制限によりボタンでの貼り付けが制限されています。\n入力欄を直接タップ・長押しして「ペースト」を選択してください。');
+      }
+    }
+
+    /* タイマー処理 */
+    let timerId = null;
+    let endTime = null;
+    let remainingSeconds = 0;
+    let isSoundOn = false;
+
+    function updateDisplay(totalSec) {
+      const h = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const s = String(totalSec % 60).padStart(2, '0');
+      document.getElementById('display').textContent = `${h}:${m}:${s}`;
+    }
+
+    function startTimer() {
+      if (timerId !== null) return;
+
+      if (remainingSeconds === 0) {
+        const h = parseInt(document.getElementById('hInput').value) || 0;
+        const m = parseInt(document.getElementById('mInput').value) || 0;
+        const s = parseInt(document.getElementById('sInput').value) || 0;
+        remainingSeconds = h * 3600 + m * 60 + s;
+      }
+
+      if (remainingSeconds <= 0) return;
+
+      endTime = Date.now() + remainingSeconds * 1000;
+      updateDisplay(remainingSeconds);
+
+      timerId = setInterval(() => {
+        const now = Date.now();
+        const diff = Math.ceil((endTime - now) / 1000);
+
+        if (diff <= 0) {
+          clearInterval(timerId);
+          timerId = null;
+          remainingSeconds = 0;
+          updateDisplay(0);
+          playAlarm();
+          alert('時間になりました！');
+        } else {
+          remainingSeconds = diff;
+          updateDisplay(remainingSeconds);
+        }
+      }, 500);
+    }
+
+    function stopTimer() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function resetTimer() {
+      stopTimer();
+      remainingSeconds = 0;
+      document.getElementById('hInput').value = '';
+      document.getElementById('mInput').value = '';
+      document.getElementById('sInput').value = '';
+      updateDisplay(0);
+    }
+
+    function setPreset(minutes) {
+      resetTimer();
+      document.getElementById('mInput').value = minutes;
+      startTimer();
+    }
+
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      const btn = document.getElementById('soundBtn');
+      btn.textContent = isSoundOn ? '音 ON' : '音 OFF';
+    }
+
+    function playAlarm() {
+      if (!isSoundOn) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.5);
+      } catch(e) {}
+    }
+
+    /* メモ処理 (31行設定) */
+    const TOTAL_MEMOS = 31;
+
+    window.onload = function() {
+      // ダークモード設定の復元
+      if (localStorage.getItem('dark_mode') === 'true') {
+        document.body.classList.add('dark-mode');
+      }
+
+      const container = document.getElementById('memoContainer');
+      const savedData = JSON.parse(localStorage.getItem('my_20_memos')) || [];
+
+      for (let i = 0; i < TOTAL_MEMOS; i++) {
+        const row = document.createElement('div');
+        row.className = 'memo-row';
+        
+        // デフォルトの日付（10/31 〜 10/1 の降順）を算出
+        const defaultDate = `10/${31 - i}`;
+
+        const idInput = document.createElement('input');
+        idInput.type = 'text';
+        idInput.className = 'id-input';
+        idInput.placeholder = '';
+        idInput.maxLength = 12;
+        idInput.id = `id_${i}`;
+        // 保存データがあればそれを採用、なければ10月降順のデフォルト値をセット
+        idInput.value = (savedData[i] && savedData[i].id !== undefined && savedData[i].id !== '') ? savedData[i].id : defaultDate;
+
+        const textInput = document.createElement('input');
+        textInput.type = 'text';
+        textInput.className = 'text-input';
+        textInput.placeholder = '';
+        textInput.id = `text_${i}`;
+        textInput.value = savedData[i] ? savedData[i].text : '';
+
+        row.appendChild(idInput);
+        row.appendChild(textInput);
+        container.appendChild(row);
+      }
+    };
+
+    function saveAllMemos() {
+      const memoList = [];
+      for (let i = 0; i < TOTAL_MEMOS; i++) {
+        const idVal = document.getElementById(`id_${i}`).value;
+        const textVal = document.getElementById(`text_${i}`).value;
+        memoList.push({ id: idVal, text: textVal });
+      }
+      
+      localStorage.setItem('my_20_memos', JSON.stringify(memoList));
+      alert('保存しました！');
+    }
+
+    /* 最下段追加機能 */
+    function toggleDarkMode() {
+      const isDark = document.body.classList.toggle('dark-mode');
+      localStorage.setItem('dark_mode', isDark);
+    }
+
+    function clearAllMemos() {
+      if (confirm('すべてのメモを消去して初期化しますか？')) {
+        for (let i = 0; i < TOTAL_MEMOS; i++) {
+          document.getElementById(`id_${i}`).value = `10/${31 - i}`;
+          document.getElementById(`text_${i}`).value = '';
+        }
+        localStorage.removeItem('my_20_memos');
+        alert('一括リセット完了しました。');
+      }
+    }
+
+    function exportCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,ID/Date,Memo\n";
+      for (let i = 0; i < TOTAL_MEMOS; i++) {
+        const idVal = document.getElementById(`id_${i}`).value.replace(/"/g, '""');
+        const textVal = document.getElementById(`text_${i}`).value.replace(/"/g, '""');
+        csvContent += `"${idVal}","${textVal}"\n`;
+      }
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "memos.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.split('\n');
+        let index = 0;
+
+        for (let i = 1; i < lines.length && index < TOTAL_MEMOS; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+
+          const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
+          if (cols.length >= 2) {
+            document.getElementById(`id_${index}`).value = cols[0] || '';
+            document.getElementById(`text_${index}`).value = cols[1] || '';
+            index++;
+          }
+        }
+        saveAllMemos();
+      };
+      reader.readAsText(file);
+    }
+  </script>
+
+</body>
+</html>
