@@ -259,23 +259,11 @@
       }
     });
 
-    /* アクティブセルのコピー機能 */
+    /* アクティブセルのコピー機能 (アラートなし) */
     function copyActiveCell() {
-      if (!lastActiveInput) {
-        alert('コピーしたい入力欄（ID欄またはメモ欄）をクリックして選択してください。');
-        return;
-      }
-      const textToCopy = lastActiveInput.value;
-      if (!textToCopy) {
-        alert('選択されている欄は空です。');
-        return;
-      }
+      if (!lastActiveInput || !lastActiveInput.value) return;
 
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        alert('コピーしました！');
-      }).catch(() => {
-        alert('コピーに失敗しました。');
-      });
+      navigator.clipboard.writeText(lastActiveInput.value).catch(() => {});
     }
 
     /* アクティブセルのペースト機能（スマホ対応・エラー制御付き） */
